@@ -23,7 +23,8 @@ apt_install_debian () {
 }
 
 remove_user () {
-    deluser user --remove-home
+    username=$(awk -F: '$3 == 1000 { print $1 }' /etc/passwd) # znajduje uzytkownika o ID 1000
+    deluser $username --remove-home
 }
 
 cloud_init_config_cloudstack () {
