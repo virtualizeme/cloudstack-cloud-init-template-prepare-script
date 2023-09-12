@@ -102,6 +102,29 @@ sed -i s/" - scripts-user"/" - [scripts-user, always]"/g /etc/cloud/cloud.cfg
 }
 
 
+cloud_init_config_storage_kali () {
+
+cat > /etc/cloud/cloud.cfg.d/50_growpartion.cfg << EOF
+growpart:
+  mode: auto
+  devices:
+    - "/dev/sda5"
+  ignore_growroot_disabled: false
+EOF
+
+cat > /etc/cloud/cloud.cfg.d/51_extend_volume.cfg << EOF
+runcmd:
+  - [ cloud-init-per, always, grow_VG, pvresize, /dev/sda5 ]
+  - [ cloud-init-per, always, grow_LV, lvresize, -l, '+100%FREE', /dev/ubuntu-vg/ubuntu-lv ]
+  - [ cloud-init-per, always, grow_FS, resize2fs, /dev/ubuntu-vg/ubuntu-lv ]
+EOF
+
+sed -i s/" - runcmd"/" - [runcmd, always]"/g /etc/cloud/cloud.cfg
+sed -i s/" - scripts-user"/" - [scripts-user, always]"/g /etc/cloud/cloud.cfg
+
+}
+
+
 cloud_init_cleanup () {
     rm -rf /var/lib/cloud/*
     cloud-init clean
@@ -207,6 +230,26 @@ if [ "$NAME" = "Ubuntu" ] && [ "$VERSION_ID" = "22.04" ]; then
     cloud_init_config_users
     cloud_init_config_ssh
     cloud_init_config_storage_ubuntu
+    cloud_init_cleanup
+    cloud_init_fix_services
+    clear_files
+    update_ssh_config
+    clear_ssh
+    clear_logs
+    clear_history
+    halt_system
+fi
+
+# Kali Linux
+if [ "$NAME" = "Kali GNU/Linux" ] && [ "$VERSION_ID" = "2023.3" ]; then
+    apt_update_upgrade
+    set_locale
+    apt_install_debian
+    remove_user
+    cloud_init_config_cloudstack
+    cloud_init_config_users
+    cloud_init_config_ssh
+    cloud_init_config_storage_kali
     cloud_init_cleanup
     cloud_init_fix_services
     clear_files
